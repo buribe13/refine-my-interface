@@ -14,6 +14,7 @@ This approach explores how everyday actions (smiling, hand gestures) can become 
 ## Features
 
 ### Core Photo Booth Functionality
+
 - Live webcam preview with real-time mirrored video feed
 - **8 photo filters**: Normal, B&W, Sepia, High Contrast, Posterize, Pixelate, Invert, Thermal
 - **Single photo mode**: Classic countdown + capture
@@ -23,17 +24,20 @@ This approach explores how everyday actions (smiling, hand gestures) can become 
 - Download and delete captured photos
 
 ### Embodied Interaction (No Connected Devices)
+
 - **Pinch-to-Drag**: Use a pinch gesture (thumb + index finger) over the title bar to drag the window around the screen
 - **Smile Trigger**: Smile with teeth showing to automatically capture a photo (with 3-second cooldown)
 - On-screen status indicators showing hand tracking and face detection states
 
 ### Fallback Controls
+
 - **Mouse drag**: Click and drag the title bar to move the window
 - **Spacebar**: Press to capture a photo
 - **E key**: Toggle effects panel
 - **Escape**: Close modals
 
 ### Retro Aesthetic
+
 - Authentic Aqua-style desktop background
 - Classic macOS window chrome with traffic light buttons
 - Menu bar with system clock
@@ -42,24 +46,52 @@ This approach explores how everyday actions (smiling, hand gestures) can become 
 ## Quick Start
 
 ### Prerequisites
+
 - Modern web browser (Chrome, Firefox, Edge recommended)
 - Webcam access
 - Local development server (required for webcam permissions)
 
+## GitHub Pages (no Actions, deploy from `main`)
+
+This repo is a Next.js app. GitHub Pages can only serve **static files**, so we export the site and commit the output to `docs/`.
+
+### One-time GitHub setup
+
+- In your GitHub repo: **Settings → Pages**
+- **Source**: Deploy from a branch
+- **Branch**: `main`
+- **Folder**: `/docs`
+
+### Build + publish
+
+1. Build the static export into `docs/`:
+
+```bash
+npm run build:pages
+```
+
+2. Commit and push the generated `docs/` folder to `main`.
+
+After that, your site will be live at `https://<your-user>.github.io/refine-my-interface/`.
+
 ### Running Locally
 
 **Option 1: Python**
+
 ```bash
 cd refine-my-interface
 python -m http.server 8000
 ```
+
 Then open http://localhost:8000
 
 **Option 2: Node.js**
+
 ```bash
 cd refine-my-interface
 npx serve
 ```
+
 Then open http://localhost:3000
 
 **Option 3: VS Code Live Server**
@@ -84,28 +116,27 @@ Right-click `index.html` and select "Open with Live Server"
 ## Technical Implementation
 
 ### Stack
+
 - **HTML5/CSS3** - Semantic markup and custom styling
 - **p5.js** - Creative coding library for video capture and filter processing
 - **ml5.js** - Machine learning for handpose and facemesh detection
 
 ### File Structure
+
 ```
 refine-my-interface/
-├── index.html          # Main entry point
-├── style.css           # Aqua desktop + Photo Booth styling
-├── js/
-│   ├── main.js              # Application controller
-│   ├── photoboothSketch.js  # p5 sketch with filters
-│   └── ml/
-│       ├── hand.js          # Handpose pinch detection
-│       └── face.js          # Facemesh smile detection
-└── docs/
-    └── ...                  # Documentation
+├── src/                     # Next.js app source
+├── public/                  # Static assets
+├── scripts/
+│   └── prepare-pages.mjs    # Copies Next export to docs/
+├── docs/                    # GitHub Pages publish output (generated)
+└── project-docs/            # Markdown documentation (proposal, iteration log)
 ```
 
 ### Gesture Detection Details
 
 **Pinch Detection (js/ml/hand.js)**
+
 - Uses ml5 handPose model
 - Threshold: 40px between thumb tip and index tip
 - Hysteresis: +10px to prevent flickering
@@ -113,6 +144,7 @@ refine-my-interface/
 - Position calculated as midpoint between thumb and index
 
 **Smile Detection (js/ml/face.js)**
+
 - Uses ml5 faceMesh model (MediaPipe)
 - Mouth openness threshold: 8% of face height
 - Mouth width threshold: 35% of face width
@@ -120,7 +152,9 @@ refine-my-interface/
 - 3-second cooldown after capture
 
 ### Filter Pipeline
+
 Filters are applied as pixel operations in the p5 draw loop:
+
 - `loadPixels()` → transform pixels → `updatePixels()`
 - Pixelate uses block averaging for performance
 - Thermal maps grayscale to 5-stop color gradient (blue → cyan → green → yellow → red)
@@ -132,6 +166,7 @@ Filters are applied as pixel operations in the p5 draw loop:
 This prototype uses only the built-in webcam to detect:
 
 1. **Hand Gestures (ml5 handPose)**
+
    - Detects pinch gesture by measuring distance between thumb tip and index finger tip
    - Pinch over the title bar initiates drag
    - Window follows hand movement while pinching
@@ -145,7 +180,9 @@ This prototype uses only the built-in webcam to detect:
    - Cooldown prevents rapid-fire captures
 
 ### Household Object Extension (Future)
+
 Potential additions:
+
 - Bright sticky note detection for "party mode" (rapid filter cycling)
 - Color-thresholded object tracking for additional triggers
 - Distance-based interactions using object size
@@ -153,18 +190,21 @@ Potential additions:
 ## Iteration Log
 
 ### Prototype A: Look & Feel
+
 - Implemented Aqua-style desktop background with gradient
 - Created authentic window chrome with title bar
 - Added traffic light buttons (close/minimize/zoom)
 - Styled control strip with mode toggles and capture button
 
 ### Prototype B: Camera & Filters
+
 - Integrated p5.js for webcam capture
 - Implemented 8 filter effects with real-time preview
 - Added mirrored video for natural "selfie" orientation
 - Created effects panel with filter previews
 
 ### Prototype C: Embodied Control
+
 - Integrated ml5 handpose for pinch detection
 - Implemented pinch-to-drag window movement
 - Added facemesh for smile detection
@@ -172,12 +212,14 @@ Potential additions:
 - Added on-screen status indicators
 
 ### Prototype D: Strip Mode
+
 - Added 4-photo strip capture mode
 - Implemented burst timing with per-frame flash
 - Created strip compositing (vertical layout with white border)
 - Added mode toggle buttons in control strip
 
 ### Prototype E: Gallery & Polish
+
 - Implemented in-session gallery with thumbnails
 - Added preview modal with download/delete
 - Added keyboard shortcuts (spacebar, E, Escape)

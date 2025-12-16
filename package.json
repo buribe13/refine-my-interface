@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:pages": "NEXT_PUBLIC_BASE_PATH=/refine-my-interface next build && node scripts/prepare-pages.mjs",
     "start": "next start",
     "lint": "eslint"
   },

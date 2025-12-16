@@ -31,6 +31,7 @@ The assignment brief asks for "real-world things not connected to your computer.
 **Rationale**: In traditional Photo Booth, you set a timer, pose, and hope you look good when it captures. By detecting smiles, we capture the moment when you're actually expressing the emotion you want to preserve.
 
 **Technical Implementation**:
+
 - ml5 faceMesh detects 468 facial landmarks
 - We measure mouth openness (lip separation / face height ratio)
 - We measure mouth width (corner distance / face width ratio)
@@ -39,6 +40,7 @@ The assignment brief asks for "real-world things not connected to your computer.
 - 3-second cooldown prevents rapid-fire captures
 
 **Design Decisions**:
+
 - Threshold tuned for "teeth showing" rather than any smile
 - Cooldown prevents accidental capture loops
 - Visual feedback shows detection progress
@@ -50,6 +52,7 @@ The assignment brief asks for "real-world things not connected to your computer.
 **Rationale**: The pinch gesture is universally understood as "grab" or "pick up." By mapping this to window dragging, we create an intuitive spatial interaction that feels like physically moving an object on your desk.
 
 **Technical Implementation**:
+
 - ml5 handPose detects 21 hand landmarks
 - Distance calculated between thumb_tip and index_finger_tip
 - Hysteresis (+10px) prevents state flickering
@@ -58,6 +61,7 @@ The assignment brief asks for "real-world things not connected to your computer.
 - Position is mirrored (flipped X) to match selfie view
 
 **Design Decisions**:
+
 - Title bar restriction prevents accidental drags
 - Mirrored coordinates feel natural in selfie view
 - Release pinch anywhere to "drop" the window
@@ -66,11 +70,11 @@ The assignment brief asks for "real-world things not connected to your computer.
 
 Embodied interactions are inherently less reliable than direct input. We provide fallbacks:
 
-| Primary | Fallback |
-|---------|----------|
+| Primary       | Fallback                     |
+| ------------- | ---------------------------- |
 | Smile capture | Spacebar or click red button |
-| Pinch drag | Mouse drag on title bar |
-| Filter toggle | E key or Effects button |
+| Pinch drag    | Mouse drag on title bar      |
+| Filter toggle | E key or Effects button      |
 
 ## Household Object Extension (Future Work)
 
@@ -79,11 +83,13 @@ The current prototype focuses on body-based input, but the architecture supports
 ### Potential Additions
 
 1. **Sticky Note Detection**
+
    - Hold up a bright colored sticky note
    - Detected via color thresholding
    - Could trigger "party mode" (rapid filter cycling)
 
 2. **Coffee Mug Trigger**
+
    - Detect specific object shape/color
    - "Cheers" gesture triggers capture
    - Social context: capturing coffee moments
@@ -96,6 +102,7 @@ The current prototype focuses on body-based input, but the architecture supports
 ### Implementation Approach
 
 These extensions would use:
+
 - p5.js color thresholding for simple detection
 - ml5 image classification for object recognition
 - Blob detection for shape analysis
@@ -105,6 +112,7 @@ These extensions would use:
 ### Lighting Requirements
 
 The ML models require adequate lighting:
+
 - Works best with daylight or bright artificial light
 - Front-lighting preferred over backlighting
 - Consistent lighting reduces detection jitter
@@ -118,6 +126,7 @@ The ML models require adequate lighting:
 ### Feedback Design
 
 Users need to understand the system state:
+
 - Status badges show hand/face tracking status
 - Smile indicator shows detection progress
 - Countdown provides capture timing
@@ -128,11 +137,10 @@ Users need to understand the system state:
 This prototype demonstrates that meaningful embodied interaction is achievable with commodity hardware (a webcam) and accessible ML tools (ml5.js). By mapping natural human expressions and gestures to application controls, we create an experience that feels more intuitive and playful than traditional input methods.
 
 The technical implementation prioritizes reliability through:
+
 - Consecutive frame requirements (debouncing)
 - Hysteresis (preventing state oscillation)
 - Cooldowns (preventing unwanted repetition)
 - Visual feedback (user understanding)
 
 Future work could expand the vocabulary of recognized gestures and objects, creating richer embodied experiences.
-
-
