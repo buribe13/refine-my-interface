@@ -1,0 +1,928 @@
+/* ============================================
+   RETRO PHOTO BOOTH - Classic Mac OS X Leopard Era
+   ============================================ */
+
+:root {
+  /* Desktop - Classic Leopard Blue Waves */
+  --desktop-start: #7ab4d9;
+  --desktop-mid: #4a8fc4;
+  --desktop-end: #0d4a88;
+
+  /* Window Chrome - Leopard Brushed Metal */
+  --titlebar-bg: linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 50%, #c4c4c4 100%);
+  --titlebar-shine: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  --window-border: rgba(0, 0, 0, 0.3);
+  --window-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 10px 40px rgba(0, 0, 0, 0.4);
+
+  /* Photo Booth Dark UI */
+  --pb-bg: #1a1a1a;
+  --pb-darker: #0d0d0d;
+  --pb-controls: linear-gradient(180deg, #4a4a4a 0%, #2d2d2d 50%, #252525 100%);
+  --pb-capture: linear-gradient(180deg, #f55 0%, #d22 50%, #b00 100%);
+
+  /* UI Elements */
+  --btn-bg: linear-gradient(
+    180deg,
+    rgba(80, 80, 80, 0.9) 0%,
+    rgba(50, 50, 50, 0.9) 100%
+  );
+  --btn-hover: linear-gradient(
+    180deg,
+    rgba(100, 100, 100, 0.9) 0%,
+    rgba(70, 70, 70, 0.9) 100%
+  );
+  --btn-active: linear-gradient(
+    180deg,
+    rgba(60, 60, 60, 0.9) 0%,
+    rgba(40, 40, 40, 0.9) 100%
+  );
+
+  --text-light: #ffffff;
+  --text-muted: #888888;
+}
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Lucida Grande", "Helvetica Neue", -apple-system,
+    BlinkMacSystemFont, Arial, sans-serif;
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   DESKTOP - Classic Leopard Blue Aurora Waves
+   ============================================ */
+#desktop {
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(
+      ellipse 200% 100% at 50% 100%,
+      #3d7ab8 0%,
+      transparent 50%
+    ),
+    radial-gradient(ellipse 150% 80% at 20% 80%, #5a9fd4 0%, transparent 40%),
+    radial-gradient(ellipse 150% 80% at 80% 70%, #4a8fc4 0%, transparent 40%),
+    linear-gradient(
+      180deg,
+      var(--desktop-start) 0%,
+      #5a9fd4 15%,
+      var(--desktop-mid) 30%,
+      #3d7ab8 50%,
+      #2d6aa8 70%,
+      #1d5a98 85%,
+      var(--desktop-end) 100%
+    );
+  position: relative;
+  overflow: hidden;
+}
+
+/* Horizontal wave streaks */
+#desktop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 40%,
+      rgba(100, 160, 220, 0.15) 45%,
+      rgba(100, 160, 220, 0.25) 50%,
+      rgba(100, 160, 220, 0.15) 55%,
+      transparent 60%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 55%,
+      rgba(80, 140, 200, 0.2) 60%,
+      rgba(80, 140, 200, 0.3) 65%,
+      rgba(80, 140, 200, 0.2) 70%,
+      transparent 75%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 70%,
+      rgba(60, 120, 180, 0.25) 75%,
+      rgba(60, 120, 180, 0.4) 80%,
+      rgba(60, 120, 180, 0.25) 85%,
+      transparent 90%,
+      transparent 100%
+    );
+  pointer-events: none;
+}
+
+/* ============================================
+   MENU BAR - Leopard Translucent Style
+   ============================================ */
+#menubar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(240, 240, 240, 0.85) 50%,
+    rgba(220, 220, 220, 0.85) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 1000;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.menubar-apple {
+  font-size: 14px;
+  padding: 0 10px 0 4px;
+  color: #1a1a1a;
+  filter: grayscale(1);
+}
+
+.menubar-item {
+  padding: 2px 10px;
+  border-radius: 3px;
+  cursor: default;
+  color: #1a1a1a;
+}
+
+.menubar-item:hover {
+  background: rgba(0, 100, 200, 0.15);
+}
+
+.menubar-spacer {
+  flex: 1;
+}
+
+/* ============================================
+   PHOTO BOOTH WINDOW - Leopard Style
+   ============================================ */
+#photobooth-window {
+  position: absolute;
+  width: 640px;
+  background: #e8e8e8;
+  border-radius: 5px 5px 0 0;
+  box-shadow: var(--window-shadow);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Title Bar - Classic Leopard Brushed Metal */
+#titlebar {
+  height: 22px;
+  background: var(--titlebar-bg);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  cursor: grab;
+  position: relative;
+}
+
+#titlebar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: var(--titlebar-shine);
+  pointer-events: none;
+}
+
+#titlebar:active,
+#titlebar.dragging {
+  cursor: grabbing;
+}
+
+.window-controls {
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.window-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.window-btn.close {
+  background: linear-gradient(180deg, #ff6058 0%, #e33e32 100%);
+  border-color: #cf3a2e;
+}
+
+.window-btn.minimize {
+  background: linear-gradient(180deg, #ffbd2e 0%, #e6a01f 100%);
+  border-color: #c68f1a;
+}
+
+.window-btn.zoom {
+  background: linear-gradient(180deg, #28c940 0%, #1aaa29 100%);
+  border-color: #14921e;
+}
+
+.window-btn:hover {
+  filter: brightness(1.1);
+}
+
+.window-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Window Content */
+#window-content {
+  display: flex;
+  flex-direction: column;
+  background: var(--pb-bg);
+}
+
+/* ============================================
+   PREVIEW CONTAINER - 3x3 Filter Grid View
+   ============================================ */
+#preview-container {
+  position: relative;
+  width: 100%;
+  background: var(--pb-darker);
+  overflow: hidden;
+  padding: 20px;
+}
+
+/* Filter Grid - 3x3 Live Previews (like classic Photo Booth) */
+#filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  aspect-ratio: 4/3;
+  max-height: 380px;
+}
+
+.filter-cell {
+  position: relative;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.filter-cell:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.02);
+}
+
+.filter-cell.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 4px 16px rgba(0, 0, 0, 0.5);
+  transform: scale(1.02);
+}
+
+.filter-cell canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.filter-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 8px 6px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+/* Single View Mode */
+#single-view {
+  display: none;
+  width: 100%;
+  height: 380px;
+  align-items: center;
+  justify-content: center;
+}
+
+#single-view.active {
+  display: flex;
+}
+
+#single-view canvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide filter grid when in single view */
+#preview-container.single-mode #filter-grid {
+  display: none;
+}
+
+#preview-container.single-mode #single-view {
+  display: flex;
+}
+
+/* P5 Container (hidden, used for base video) */
+#p5-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   OVERLAYS
+   ============================================ */
+
+/* Loading Overlay */
+#loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--pb-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 50;
+  transition: opacity 0.3s ease;
+}
+
+#loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #333;
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#loading-message {
+  color: var(--text-light);
+  font-size: 13px;
+}
+
+/* Flash Effect */
+#flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+
+#flash-overlay.active {
+  animation: flash 0.3s ease-out;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Countdown Overlay */
+#countdown-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#countdown-overlay.hidden {
+  display: none;
+}
+
+#countdown-number {
+  font-size: 140px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 0 60px rgba(255, 255, 255, 0.6), 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: countdownPulse 1s ease-out;
+}
+
+@keyframes countdownPulse {
+  0% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Status Indicators */
+#status-indicators {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+
+#status-indicators.hidden {
+  display: none;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  color: #777;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-badge.active {
+  color: #4ade80;
+}
+
+.status-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #555;
+}
+
+.status-badge.active .dot {
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+}
+
+/* Smile Indicator */
+#smile-indicator {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 16px;
+  color: #777;
+  font-size: 11px;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#smile-indicator.hidden {
+  display: none;
+}
+
+#smile-indicator.detecting {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+#smile-indicator.triggered {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+#smile-indicator .emoji {
+  font-size: 16px;
+}
+
+/* ============================================
+   PAGE DOTS - Classic Photo Booth Pagination
+   ============================================ */
+#page-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0;
+  background: var(--pb-darker);
+}
+
+#page-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#page-dots .dot.active {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+#page-dots .dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   CONTROL STRIP - Classic Photo Booth Toolbar
+   ============================================ */
+#control-strip {
+  height: 70px;
+  background: var(--pb-controls);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+}
+
+.control-group.left {
+  justify-content: flex-start;
+}
+
+.control-group.right {
+  justify-content: flex-end;
+}
+
+/* Icon Buttons */
+.mode-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: var(--btn-bg);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.mode-btn:hover {
+  background: var(--btn-hover);
+  color: #fff;
+}
+
+.mode-btn.active {
+  background: var(--btn-active);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mode-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Capture Button - Big Red */
+.capture-btn {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--pb-capture);
+  border: 4px solid rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.1s, box-shadow 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.capture-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+.capture-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 50, 50, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.capture-btn:active {
+  transform: scale(0.95);
+  background: linear-gradient(180deg, #d22 0%, #b00 50%, #900 100%);
+}
+
+.capture-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Effects Button */
+.effects-btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  background: var(--btn-bg);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+}
+
+.effects-btn:hover {
+  background: var(--btn-hover);
+  color: #fff;
+}
+
+.effects-btn.active {
+  background: var(--btn-active);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* ============================================
+   GALLERY STRIP
+   ============================================ */
+#gallery-strip {
+  height: 80px;
+  background: var(--pb-bg);
+  border-top: 1px solid #333;
+  padding: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#gallery-items {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+}
+
+#gallery-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+#gallery-empty.hidden {
+  display: none;
+}
+
+.gallery-thumb {
+  position: relative;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.gallery-thumb:hover {
+  border-color: #fff;
+  transform: scale(1.05);
+}
+
+.gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-thumb .delete-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.gallery-thumb:hover .delete-btn {
+  opacity: 1;
+}
+
+.gallery-thumb .delete-btn:hover {
+  background: #e53935;
+}
+
+/* Gallery scrollbar */
+#gallery-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+#gallery-strip::-webkit-scrollbar-track {
+  background: #111;
+}
+
+#gallery-strip::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+/* ============================================
+   PREVIEW MODAL
+   ============================================ */
+#preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#preview-modal.hidden {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.modal-content img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(90vh - 70px);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  justify-content: center;
+  background: #2a2a2a;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  background: var(--btn-bg);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.modal-btn:hover {
+  background: var(--btn-hover);
+}
+
+.modal-btn.primary {
+  background: linear-gradient(180deg, #6cb3f9 0%, #2d8cf0 50%, #1a73e8 100%);
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+.modal-btn.primary:hover {
+  background: linear-gradient(180deg, #7dc3ff 0%, #3d9cff 50%, #2a83f8 100%);
+}
+
+.modal-btn.danger {
+  background: linear-gradient(180deg, #f55 0%, #d22 50%, #b00 100%);
+}
+
+.modal-btn.danger:hover {
+  background: linear-gradient(180deg, #ff6666 0%, #e33 50%, #c11 100%);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.hidden {
+  display: none !important;
+}
