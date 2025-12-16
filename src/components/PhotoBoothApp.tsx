@@ -12,6 +12,10 @@ import {
   FILTERS,
   applyFilterToImageData,
 } from "@/lib/p5/createSketch";
+
+// Paging constants for effects grid
+const TOTAL_PAGES = 2;
+const PAGE_SIZE = 9; // 3x3 grid per page
 import { initHandpose, getHandState, HandState } from "@/lib/ml/hand";
 import { initFacemesh, getFaceState, FaceState } from "@/lib/ml/face";
 import {
@@ -74,9 +78,15 @@ export default function PhotoBoothApp({
   const lastPinchPosRef = useRef<{ x: number; y: number } | null>(null);
   const wasPinchingRef = useRef(false);
 
+  // Swipe gesture tracking
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 50; // minimum distance to trigger swipe
+
   // Capture function
   const capturePhoto = useCallback(async () => {
-    if (!mainCanvasRef.current || countdown !== null) return;
+    // Don't capture if already counting down
+    if (countdown !== null) return;
 
     // Start countdown
     setCountdown(3);
@@ -94,13 +104,15 @@ export default function PhotoBoothApp({
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 300);
 
-    // Get the appropriate canvas based on view mode
+    // Get the appropriate canvas based on current view mode (check refs directly)
+    // In grid view, use the filter canvas; in single view, use the main canvas
     let canvas: HTMLCanvasElement | null = null;
-    if (viewMode === "grid") {
-      // In grid view, capture the selected filter's canvas
-      canvas = canvasRefs.current.get(currentFilter) || null;
-    } else {
+    if (mainCanvasRef.current) {
+      // Single view - main canvas is mounted
       canvas = mainCanvasRef.current;
+    } else {
+      // Grid view - use the filter canvas
+      canvas = canvasRefs.current.get(currentFilter) || null;
     }
 
     if (!canvas) return;
@@ -119,7 +131,7 @@ export default function PhotoBoothApp({
     } catch (err) {
       console.error("Failed to save image:", err);
     }
-  }, [currentFilter, countdown, viewMode]);
+  }, [currentFilter, countdown]);
 
   // Initialize camera
   useEffect(() => {
@@ -180,11 +192,12 @@ export default function PhotoBoothApp({
         return;
       }
 
-      // Render each filter preview in grid mode
+      // Render each filter preview in grid mode (only current page)
       if (viewMode === "grid") {
-        FILTERS.forEach((filter) => {
-          const canvas = canvasRefs.current.get(filter.id);
-          if (!canvas) return;
+        // Render all filters that have canvases registered (current page filters)
+        canvasRefs.current.forEach((canvas, filterId) => {
+          const filter = FILTERS.find((f) => f.id === filterId);
+          if (!filter) return;
 
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
@@ -238,9 +251,9 @@ export default function PhotoBoothApp({
     };
 
     animationRef.current = requestAnimationFrame(render);
-  }, [viewMode, currentFilter]);
+  }, [viewMode, currentFilter, currentPage]);
 
-  // Restart render loop when view mode changes
+  // Restart render loop when view mode or page changes
   useEffect(() => {
     if (videoRef.current) {
       if (animationRef.current) {
@@ -248,7 +261,24 @@ export default function PhotoBoothApp({
       }
       startRenderLoop();
     }
-  }, [viewMode, startRenderLoop]);
+  }, [viewMode, startRenderLoop, currentPage]);
+
+  // Auto-select a filter from the current page when page changes
+  useEffect(() => {
+    const filtersOnPage = FILTERS.slice(
+      currentPage * PAGE_SIZE,
+      (currentPage + 1) * PAGE_SIZE
+    );
+    // If current filter is not on this page, select the center filter of this page
+    const isCurrentFilterOnPage = filtersOnPage.some(
+      (f) => f.id === currentFilter
+    );
+    if (!isCurrentFilterOnPage && filtersOnPage.length > 0) {
+      // Select center filter (for 3x3 grid that's index 4, or middle of available)
+      const centerIndex = Math.floor(filtersOnPage.length / 2);
+      setCurrentFilter(filtersOnPage[centerIndex].id);
+    }
+  }, [currentPage, currentFilter]);
 
   // Initialize ML models
   const initML = async (video: HTMLVideoElement) => {
@@ -394,13 +424,51 @@ export default function PhotoBoothApp({
     []
   );
 
+  // Swipe gesture handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchEndXRef.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    touchEndXRef.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (touchStartXRef.current === null || touchEndXRef.current === null)
+      return;
+
+    const diff = touchStartXRef.current - touchEndXRef.current;
+
+    if (Math.abs(diff) > SWIPE_THRESHOLD) {
+      if (diff > 0 && currentPage < TOTAL_PAGES - 1) {
+        // Swipe left -> next page
+        setCurrentPage((prev) => prev + 1);
+      } else if (diff < 0 && currentPage > 0) {
+        // Swipe right -> previous page
+        setCurrentPage((prev) => prev - 1);
+      }
+    }
+
+    touchStartXRef.current = null;
+    touchEndXRef.current = null;
+  }, [currentPage]);
+
   return (
     <div className="photobooth-container">
       {/* Main View Area */}
       <div className="photobooth-main">
         {viewMode === "grid" && (
-          <div className="filter-grid">
-            {FILTERS.map((filter) => (
+          <div
+            className="filter-grid swipeable"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {FILTERS.slice(
+              currentPage * PAGE_SIZE,
+              (currentPage + 1) * PAGE_SIZE
+            ).map((filter) => (
               <div
                 key={filter.id}
                 className={`filter-grid-item ${
@@ -532,11 +600,40 @@ export default function PhotoBoothApp({
         <div className={`flash-overlay ${isFlashing ? "active" : ""}`} />
       </div>
 
-      {/* Page dots for grid view */}
+      {/* Page dots for grid view - exactly 2 dots */}
       {viewMode === "grid" && (
         <div className="page-dots">
-          <span className={`dot ${currentPage === 0 ? "active" : ""}`} />
-          <span className="dot" />
+          <span
+            className={`dot ${currentPage === 0 ? "active" : ""}`}
+            onClick={() => setCurrentPage(0)}
+          />
+          <span
+            className={`dot ${currentPage === 1 ? "active" : ""}`}
+            onClick={() => setCurrentPage(1)}
+          />
+        </div>
+      )}
+
+      {/* Photo strip - only show when there are captured images */}
+      {gallery.length > 0 && viewMode !== "gallery" && (
+        <div className="photo-strip">
+          {gallery.slice(0, 5).map((img) => (
+            <div
+              key={img.id}
+              className="photo-strip-item"
+              onClick={() => setPreviewImage(img)}
+            >
+              <img src={img.dataUrl} alt={`Photo ${img.timestamp}`} />
+            </div>
+          ))}
+          {gallery.length > 5 && (
+            <div
+              className="photo-strip-more"
+              onClick={() => setViewMode("gallery")}
+            >
+              +{gallery.length - 5}
+            </div>
+          )}
         </div>
       )}
 
@@ -545,9 +642,7 @@ export default function PhotoBoothApp({
         <div className="controls-left">
           <button
             className={`control-btn ${viewMode === "gallery" ? "active" : ""}`}
-            onClick={() =>
-              setViewMode(viewMode === "gallery" ? "grid" : "gallery")
-            }
+            onClick={() => setViewMode("gallery")}
             title="Gallery"
           >
             {/* Grid/Gallery icon */}

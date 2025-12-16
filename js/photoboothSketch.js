@@ -14,20 +14,37 @@
   let onVideoReadyCallback = null;
   let videoElement = null;
 
-  // Filter definitions - arranged for 3x3 grid (like classic Photo Booth)
-  // Row 1: Rainbow, Vibrant, Cold Blue
-  // Row 2: High Contrast, Normal, Vintage
-  // Row 3: X-Ray, Neon, Black & White
+  // Filter definitions - arranged for 3x3 grid pages (like classic Photo Booth)
+  // PAGE 1: COLOR EFFECTS
+  // Row 1: Vibrant, Normal, Cold Blue
+  // Row 2: Vintage, High Contrast, Black & White
+  // Row 3: Neon, Warm Glow, Sunset
+  //
+  // PAGE 2: DISTORTION EFFECTS
+  // Row 1: Rainbow, X-Ray, Mirror
+  // Row 2: Pixelate, Stretch, Bulge
+  // Row 3: Glitch, Thermal, Comic
   const FILTERS = [
-    { id: "rainbow", name: "Rainbow" },
+    // Page 1: Color Effects
     { id: "vibrant", name: "Vibrant" },
-    { id: "coldblue", name: "Cold Blue" },
-    { id: "highcontrast", name: "High Contrast" },
     { id: "normal", name: "Normal" },
+    { id: "coldblue", name: "Cold Blue" },
     { id: "vintage", name: "Vintage" },
-    { id: "xray", name: "X-Ray" },
-    { id: "neon", name: "Neon" },
+    { id: "highcontrast", name: "High Contrast" },
     { id: "bw", name: "Black & White" },
+    { id: "neon", name: "Neon" },
+    { id: "warmglow", name: "Warm Glow" },
+    { id: "sunset", name: "Sunset" },
+    // Page 2: Distortion Effects
+    { id: "rainbow", name: "Rainbow" },
+    { id: "xray", name: "X-Ray" },
+    { id: "mirror", name: "Mirror" },
+    { id: "pixelate", name: "Pixelate" },
+    { id: "stretch", name: "Stretch" },
+    { id: "bulge", name: "Bulge" },
+    { id: "glitch", name: "Glitch" },
+    { id: "thermal", name: "Thermal" },
+    { id: "comic", name: "Comic" },
   ];
 
   /**
@@ -194,6 +211,88 @@
           pixels[i + 2] = Math.min(255, brightness * 0.7 + b * 0.5 + 40);
         }
         break;
+
+      case "warmglow":
+        // Warm golden/amber glow
+        for (let i = 0; i < pixels.length; i += 4) {
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          pixels[i] = Math.min(255, r * 1.2 + 40);
+          pixels[i + 1] = Math.min(255, g * 1.05 + 20);
+          pixels[i + 2] = Math.min(255, b * 0.6);
+        }
+        break;
+
+      case "sunset":
+        // Orange/pink gradient based on position
+        for (let i = 0; i < pixels.length; i += 4) {
+          const y = Math.floor(i / 4 / width);
+          const height = imageData.height;
+          const gradientPos = y / height;
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          // Blend from orange-pink at top to purple at bottom
+          pixels[i] = Math.min(255, r * (1.3 - gradientPos * 0.3) + 50);
+          pixels[i + 1] = Math.min(255, g * (0.7 + gradientPos * 0.2));
+          pixels[i + 2] = Math.min(255, b * (0.8 + gradientPos * 0.5) + 30);
+        }
+        break;
+
+      case "thermal":
+        // Heat vision / thermal camera look
+        for (let i = 0; i < pixels.length; i += 4) {
+          const avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+          // Map brightness to thermal colors (black->blue->purple->red->orange->yellow->white)
+          if (avg < 64) {
+            pixels[i] = 0;
+            pixels[i + 1] = 0;
+            pixels[i + 2] = avg * 3;
+          } else if (avg < 128) {
+            pixels[i] = (avg - 64) * 4;
+            pixels[i + 1] = 0;
+            pixels[i + 2] = 255 - (avg - 64) * 2;
+          } else if (avg < 192) {
+            pixels[i] = 255;
+            pixels[i + 1] = (avg - 128) * 4;
+            pixels[i + 2] = 0;
+          } else {
+            pixels[i] = 255;
+            pixels[i + 1] = 255;
+            pixels[i + 2] = (avg - 192) * 4;
+          }
+        }
+        break;
+
+      case "comic":
+        // Posterize / comic book effect
+        const levels = 5;
+        for (let i = 0; i < pixels.length; i += 4) {
+          pixels[i] = Math.floor(pixels[i] / (256 / levels)) * (256 / levels);
+          pixels[i + 1] =
+            Math.floor(pixels[i + 1] / (256 / levels)) * (256 / levels);
+          pixels[i + 2] =
+            Math.floor(pixels[i + 2] / (256 / levels)) * (256 / levels);
+        }
+        break;
+
+      case "glitch":
+        // RGB channel split / glitch effect
+        const glitchOffset = 8;
+        const tempPixels = new Uint8ClampedArray(pixels);
+        for (let i = 0; i < pixels.length; i += 4) {
+          const x = (i / 4) % width;
+          // Shift red channel left
+          if (x >= glitchOffset) {
+            pixels[i] = tempPixels[i - glitchOffset * 4];
+          }
+          // Shift blue channel right
+          if (x < width - glitchOffset) {
+            pixels[i + 2] = tempPixels[i + 2 + glitchOffset * 4];
+          }
+        }
+        break;
     }
 
     ctx.putImageData(imageData, 0, 0);
@@ -210,16 +309,124 @@
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Handle spatial distortion effects first
+    if (filterId === "mirror") {
+      // Draw left half, then mirror it
+      ctx.save();
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoElement, 0, 0, w, h);
+      ctx.restore();
+      // Draw mirrored left half on right side
+      ctx.save();
+      ctx.drawImage(canvas, 0, 0, w / 2, h, w / 2, 0, w / 2, h);
+      ctx.translate(w / 2, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(canvas, 0, 0, w / 2, h, -w / 2, 0, w / 2, h);
+      ctx.restore();
+      return;
+    }
+
+    if (filterId === "pixelate") {
+      // Draw mirrored video first
+      ctx.save();
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoElement, 0, 0, w, h);
+      ctx.restore();
+      // Pixelate by scaling down then up
+      const pixelSize = 12;
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = Math.ceil(w / pixelSize);
+      tempCanvas.height = Math.ceil(h / pixelSize);
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(tempCanvas, 0, 0, w, h);
+      ctx.imageSmoothingEnabled = true;
+      return;
+    }
+
+    if (filterId === "stretch") {
+      // Vertical stretch from center
+      ctx.save();
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoElement, 0, 0, w, h);
+      ctx.restore();
+      // Apply vertical stretch distortion
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.drawImage(canvas, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      // Draw stretched slices
+      for (let y = 0; y < h; y++) {
+        const distFromCenter = Math.abs(y - h / 2) / (h / 2);
+        const stretch = 1 + (1 - distFromCenter) * 0.5;
+        const srcY = Math.floor(h / 2 + (y - h / 2) / stretch);
+        if (srcY >= 0 && srcY < h) {
+          ctx.drawImage(tempCanvas, 0, srcY, w, 1, 0, y, w, 1);
+        }
+      }
+      return;
+    }
+
+    if (filterId === "bulge") {
+      // Fisheye / bulge effect
+      ctx.save();
+      ctx.translate(w, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoElement, 0, 0, w, h);
+      ctx.restore();
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const srcPixels = new Uint8ClampedArray(imageData.data);
+      const destPixels = imageData.data;
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const radius = Math.min(w, h) / 2;
+      const strength = 1.8;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const dx = x - centerX;
+          const dy = y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const destIdx = (y * w + x) * 4;
+
+          if (dist < radius) {
+            const amount = Math.pow(dist / radius, strength);
+            const srcX = Math.floor(centerX + dx * amount);
+            const srcY = Math.floor(centerY + dy * amount);
+            if (srcX >= 0 && srcX < w && srcY >= 0 && srcY < h) {
+              const srcIdx = (srcY * w + srcX) * 4;
+              destPixels[destIdx] = srcPixels[srcIdx];
+              destPixels[destIdx + 1] = srcPixels[srcIdx + 1];
+              destPixels[destIdx + 2] = srcPixels[srcIdx + 2];
+              destPixels[destIdx + 3] = srcPixels[srcIdx + 3];
+            }
+          }
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+      return;
+    }
+
+    // Standard rendering for color-based filters
     // Draw mirrored video
     ctx.save();
-    ctx.translate(canvas.width, 0);
+    ctx.translate(w, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(videoElement, 0, 0, w, h);
     ctx.restore();
 
     // Apply filter
     if (filterId !== "normal") {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, w, h);
       applyFilter(ctx, imageData, filterId);
     }
   }

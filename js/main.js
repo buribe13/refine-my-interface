@@ -6,6 +6,10 @@
 (function () {
   "use strict";
 
+  // Paging constants for effects grid
+  const TOTAL_PAGES = 2;
+  const FILTERS_PER_PAGE = 9; // 3x3 grid per page = 9 filters
+
   // Application state
   const App = {
     // UI elements
@@ -17,6 +21,9 @@
 
     // View mode
     viewMode: "grid", // 'grid' or 'single'
+
+    // Current effects page (0 or 1)
+    currentPage: 0,
 
     // Window state
     window: {
@@ -54,6 +61,13 @@
 
     // Animation frame
     animationId: null,
+
+    // Swipe gesture tracking
+    swipe: {
+      startX: null,
+      endX: null,
+      threshold: 50,
+    },
   };
 
   /**
@@ -77,6 +91,9 @@
 
     // Build filter grid
     buildFilterGrid();
+
+    // Initial gallery render (hides strip if empty)
+    renderGallery();
 
     // Initialize p5 sketch
     initSketch();
@@ -118,6 +135,7 @@
       pageDots: document.getElementById("page-dots"),
 
       // Gallery
+      galleryStrip: document.getElementById("gallery-strip"),
       galleryItems: document.getElementById("gallery-items"),
       galleryEmpty: document.getElementById("gallery-empty"),
 
@@ -137,16 +155,33 @@
   }
 
   /**
-   * Build the 3x3 filter grid with canvases
+   * Get filters for the current page
+   */
+  function getFiltersForPage(page) {
+    const allFilters = window.PhotoboothSketch.FILTERS;
+    const start = page * FILTERS_PER_PAGE;
+    const end = start + FILTERS_PER_PAGE;
+    return allFilters.slice(start, end);
+  }
+
+  /**
+   * Build the 3x3 filter grid with canvases for current page
    */
   function buildFilterGrid() {
     const grid = App.elements.filterGrid;
     grid.innerHTML = "";
 
-    window.PhotoboothSketch.FILTERS.forEach((filter, index) => {
+    // Clear old canvas references
+    App.filterCanvases.clear();
+
+    // Get filters for current page
+    const filtersForPage = getFiltersForPage(App.currentPage);
+    const currentFilter = window.PhotoboothSketch.getFilter();
+
+    filtersForPage.forEach((filter, index) => {
       const cell = document.createElement("div");
       cell.className = `filter-cell ${
-        filter.id === "normal" ? "selected" : ""
+        filter.id === currentFilter ? "selected" : ""
       }`;
       cell.dataset.filterId = filter.id;
 
@@ -182,6 +217,78 @@
       App.mainCanvas.width = 600;
       App.mainCanvas.height = 450;
     }
+
+    // Update page dots
+    updatePageDots();
+  }
+
+  /**
+   * Update page dots to reflect current page
+   */
+  function updatePageDots() {
+    const dots = App.elements.pageDots.querySelectorAll(".dot");
+    dots.forEach((dot, index) => {
+      dot.classList.toggle("active", index === App.currentPage);
+    });
+  }
+
+  /**
+   * Set the current effects page
+   */
+  function setPage(page) {
+    if (page < 0 || page >= TOTAL_PAGES) return;
+    if (page === App.currentPage) return;
+
+    App.currentPage = page;
+
+    // Check if current filter is on this page
+    const filtersOnPage = getFiltersForPage(page);
+    const currentFilter = window.PhotoboothSketch.getFilter();
+    const isOnPage = filtersOnPage.some((f) => f.id === currentFilter);
+
+    // If current filter is not on this page, select the center filter
+    if (!isOnPage && filtersOnPage.length > 0) {
+      const centerIndex = Math.floor(filtersOnPage.length / 2);
+      selectFilter(filtersOnPage[centerIndex].id);
+    }
+
+    // Rebuild the grid for the new page
+    buildFilterGrid();
+  }
+
+  /**
+   * Setup swipe gesture handling on filter grid
+   */
+  function setupSwipeGestures() {
+    const grid = App.elements.filterGrid;
+
+    grid.addEventListener("touchstart", (e) => {
+      App.swipe.startX = e.touches[0].clientX;
+      App.swipe.endX = null;
+    });
+
+    grid.addEventListener("touchmove", (e) => {
+      App.swipe.endX = e.touches[0].clientX;
+    });
+
+    grid.addEventListener("touchend", () => {
+      if (App.swipe.startX === null || App.swipe.endX === null) return;
+
+      const diff = App.swipe.startX - App.swipe.endX;
+
+      if (Math.abs(diff) > App.swipe.threshold) {
+        if (diff > 0 && App.currentPage < TOTAL_PAGES - 1) {
+          // Swipe left -> next page
+          setPage(App.currentPage + 1);
+        } else if (diff < 0 && App.currentPage > 0) {
+          // Swipe right -> previous page
+          setPage(App.currentPage - 1);
+        }
+      }
+
+      App.swipe.startX = null;
+      App.swipe.endX = null;
+    });
   }
 
   /**
@@ -254,6 +361,15 @@
     App.elements.btnGallery.addEventListener("click", () => {
       // TODO: Toggle gallery view
     });
+
+    // Page dots - click to change page
+    const dots = App.elements.pageDots.querySelectorAll(".dot");
+    dots.forEach((dot, index) => {
+      dot.addEventListener("click", () => setPage(index));
+    });
+
+    // Swipe gestures on filter grid
+    setupSwipeGestures();
 
     // Modal
     App.elements.btnDownload.addEventListener("click", onDownload);
@@ -333,11 +449,10 @@
       }
 
       if (App.viewMode === "grid") {
-        // Render all filter canvases
-        window.PhotoboothSketch.FILTERS.forEach((filter) => {
-          const canvas = App.filterCanvases.get(filter.id);
+        // Render only filter canvases for current page
+        App.filterCanvases.forEach((canvas, filterId) => {
           if (canvas) {
-            window.PhotoboothSketch.renderToCanvas(canvas, filter.id);
+            window.PhotoboothSketch.renderToCanvas(canvas, filterId);
           }
         });
       } else {
@@ -562,13 +677,18 @@
    */
   function renderGallery() {
     const container = App.elements.galleryItems;
+    const galleryStrip = App.elements.galleryStrip;
     container.innerHTML = "";
 
+    // Hide entire gallery strip when empty
     if (App.gallery.length === 0) {
+      galleryStrip.classList.add("hidden");
       App.elements.galleryEmpty.classList.remove("hidden");
       return;
     }
 
+    // Show gallery strip when we have images
+    galleryStrip.classList.remove("hidden");
     App.elements.galleryEmpty.classList.add("hidden");
 
     App.gallery.forEach((image) => {

@@ -294,6 +294,10 @@ body {
   width: 100%;
   aspect-ratio: 4/3;
   max-height: 380px;
+  /* Better touch interaction for swiping */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .filter-cell {
