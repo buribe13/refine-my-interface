@@ -135,3 +135,4 @@ The technical implementation prioritizes reliability through:
 
 Future work could expand the vocabulary of recognized gestures and objects, creating richer embodied experiences.
 
+
